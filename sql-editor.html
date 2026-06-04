@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suka Bakar Dimsum - SQL Editor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Fira Code', 'Courier New', monospace;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      color: #333;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 2px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+      border-color: #bbb;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .editor-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 200px);
+      min-height: 500px;
+    }
+
+    .editor-header {
+      background: #f8f9fa;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .editor-stats {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 15px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .editor-content {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+    }
+
+    .line-numbers {
+      background: #f8f9fa;
+      color: #999;
+      padding: 12px 8px;
+      text-align: right;
+      user-select: none;
+      border-right: 1px solid #e0e0e0;
+      min-width: 50px;
+      line-height: 1.5;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      background: white;
+      color: #333;
+      tab-size: 2;
+    }
+
+    textarea:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 2px #667eea;
+    }
+
+    .status-bar {
+      background: #f8f9fa;
+      padding: 10px 16px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 14px 20px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      animation: slideIn 0.3s ease;
+      z-index: 1000;
+    }
+
+    .notification.success {
+      background: #10b981;
+    }
+
+    .notification.error {
+      background: #ef4444;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .modal-content p {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .editor-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .editor-stats {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .line-numbers {
+        min-width: 40px;
+        padding: 12px 4px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍜 Suka Bakar Dimsum - SQL Editor</h1>
+      <p>Editor untuk setup database Supabase - Siap untuk diupload ke Supabase SQL Editor</p>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btn-copy">📋 Copy All</button>
+        <button class="btn btn-success" id="btn-download">💾 Download SQL</button>
+        <button class="btn btn-secondary" id="btn-format">✨ Format SQL</button>
+        <button class="btn btn-secondary" id="btn-clear-undo">↩️ Undo Changes</button>
+      </div>
+    </div>
+
+    <div class="editor-container">
+      <div class="editor-header">
+        <div class="editor-stats">
+          <div class="stat">📝 Lines: <span id="line-count">0</span></div>
+          <div class="stat">📊 Chars: <span id="char-count">0</span></div>
+          <div class="stat">📌 Selection: <span id="selection-count">0</span></div>
+        </div>
+      </div>
+
+      <div class="editor-content">
+        <div class="line-numbers" id="line-numbers"></div>
+        <textarea id="sql-editor" placeholder="SQL akan dimuat di sini..."></textarea>
+      </div>
+
+      <div class="status-bar">
+        <span id="status">Ready</span>
+        <span id="cursor-pos">Line 1, Column 1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal untuk konfirmasi -->
+  <div class="modal" id="confirm-modal">
+    <div class="modal-content">
+      <h2 id="modal-title">Konfirmasi</h2>
+      <p id="modal-message">Anda yakin?</p>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" id="btn-modal-cancel">Batal</button>
+        <button class="btn btn-danger" id="btn-modal-confirm">Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('sql-editor');
+    const lineNumbers = document.getElementById('line-numbers');
+    const lineCount = document.getElementById('line-count');
+    const charCount = document.getElementById('char-count');
+    const selectionCount = document.getElementById('selection-count');
+    const cursorPos = document.getElementById('cursor-pos');
+    const status = document.getElementById('status');
+
+    let originalContent = '';
+    let sqlContent = '';
+
+    // Load SQL file on startup
+    async function loadSQL() {
+      try {
+        const response = await fetch('/supabase_setup.sql');
+        sqlContent = await response.text();
+        originalContent = sqlContent;
+        textarea.value = sqlContent;
+        updateLineNumbers();
+        updateStats();
+        showNotification('✓ SQL file berhasil dimuat!', 'success');
+      } catch (error) {
+        showNotification('✗ Gagal memuat SQL file. Pastikan file berada di folder yang sama.', 'error');
+        // Provide fallback message
+        textarea.value = '-- SQL file tidak ditemukan\n-- Silakan pastikan supabase_setup.sql berada di folder yang sama\n-- atau buka file secara manual';
+      }
+    }
+
+    function updateLineNumbers() {
+      const lines = textarea.value.split('\n');
+      lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('\n');
+    }
+
+    function updateStats() {
+      const content = textarea.value;
+      const lines = content.split('\n');
+      const selection = textarea.selectionEnd - textarea.selectionStart;
+
+      lineCount.textContent = lines.length;
+      charCount.textContent = content.length;
+      selectionCount.textContent = selection;
+    }
+
+    function updateCursorPos() {
+      const content = textarea.value.substring(0, textarea.selectionStart);
+      const lines = content.split('\n');
+      const column = lines[lines.length - 1].length + 1;
+      cursorPos.textContent = `Line ${lines.length}, Column ${column}`;
+    }
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    function showModal(title, message, callback) {
+      const modal = document.getElementById('confirm-modal');
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-message').textContent = message;
+
+      document.getElementById('btn-modal-confirm').onclick = () => {
+        modal.classList.remove('active');
+        callback(true);
+      };
+
+      document.getElementById('btn-modal-cancel').onclick = () => {
+        modal.classList.remove('active');
+        callback(false);
+      };
+
+      modal.classList.add('active');
+    }
+
+    // Copy to clipboard
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        showNotification('✓ SQL disalin ke clipboard!', 'success');
+        status.textContent = 'Copied to clipboard';
+        setTimeout(() => status.textContent = 'Ready', 2000);
+      });
+    });
+
+    // Download SQL
+    document.getElementById('btn-download').addEventListener('click', () => {
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(textarea.value));
+      element.setAttribute('download', 'suka-bakar-dimsum-setup.sql');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      showNotification('✓ SQL file berhasil didownload!', 'success');
+    });
+
+    // Format SQL
+    document.getElementById('btn-format').addEventListener('click', () => {
+      let formatted = textarea.value;
+      // Simple SQL formatting
+      formatted = formatted.replace(/;\s*\n/g, ';\n\n');
+      formatted = formatted.replace(/CREATE TABLE/g, '\nCREATE TABLE');
+      formatted = formatted.replace(/INSERT INTO/g, '\nINSERT INTO');
+      textarea.value = formatted;
+      updateLineNumbers();
+      updateStats();
+      showNotification('✓ SQL berhasil diformat!', 'success');
+    });
+
+    // Undo changes
+    document.getElementById('btn-clear-undo').addEventListener('click', () => {
+      showModal(
+        'Kembalikan ke asli?',
+        'Semua perubahan akan dihapus dan SQL akan kembali ke versi asli.',
+        (confirmed) => {
+          if (confirmed) {
+            textarea.value = originalContent;
+            updateLineNumbers();
+            updateStats();
+            showNotification('✓ Perubahan dibatalkan!', 'success');
+          }
+        }
+      );
+    });
+
+    // Event listeners
+    textarea.addEventListener('input', () => {
+      updateLineNumbers();
+      updateStats();
+    });
+
+    textarea.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = textarea.scrollTop;
+    });
+
+    textarea.addEventListener('keyup', updateCursorPos);
+    textarea.addEventListener('click', updateCursorPos);
+
+    // Load SQL on page load
+    loadSQL();
+
+    // Sync line number scroll
+    window.addEventListener('resize', updateLineNumbers);
+  </script>
+</body>
+</html>

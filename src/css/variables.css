@@ -1,0 +1,115 @@
+/* ============================================================
+   SUKA BAKAR DIMSUM — Design System Variables
+   Style: Playful Neubrutalism
+   ============================================================ */
+
+:root {
+  /* ── Color Palette ── */
+  --color-primary: #7257FF;
+  --color-primary-dark: #5939E5;
+  --color-primary-light: #C8BFFF;
+  --color-primary-surface: #E5DEFF;
+
+  --color-yellow: #FCE354;
+  --color-yellow-dark: #DEC73A;
+  --color-yellow-light: #FFF8CC;
+
+  --color-pink: #FFA9EB;
+  --color-pink-dark: #A55A96;
+  --color-pink-light: #FFD7F2;
+  --color-pink-surface: #FFF0FB;
+
+  --color-surface: #F9FAFB;
+  --color-surface-dim: #D3DAEF;
+  --color-white: #FFFFFF;
+  --color-background: #F9FAFB;
+
+  --color-border: #111827;
+  --color-text: #111827;
+  --color-text-secondary: #474555;
+  --color-text-muted: #787587;
+
+  --color-success: #22C55E;
+  --color-success-light: #DCFCE7;
+  --color-error: #BA1A1A;
+  --color-error-light: #FFDAD6;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+
+  --color-inverse: #293040;
+  --color-inverse-text: #EDF0FF;
+
+  /* ── Typography ── */
+  --font-family: 'Sora', sans-serif;
+
+  --fs-headline-xl: 40px;
+  --lh-headline-xl: 48px;
+  --ls-headline-xl: -0.02em;
+
+  --fs-headline-lg: 32px;
+  --lh-headline-lg: 40px;
+  --ls-headline-lg: -0.01em;
+
+  --fs-headline-md: 24px;
+  --lh-headline-md: 32px;
+
+  --fs-body-lg: 18px;
+  --lh-body-lg: 28px;
+
+  --fs-body-md: 16px;
+  --lh-body-md: 24px;
+
+  --fs-body-sm: 14px;
+  --lh-body-sm: 20px;
+
+  --fs-price-display: 28px;
+  --lh-price-display: 32px;
+
+  --fs-label-sm: 14px;
+  --lh-label-sm: 20px;
+
+  --fs-label-xs: 12px;
+  --lh-label-xs: 16px;
+
+  --fw-bold: 700;
+  --fw-semibold: 600;
+  --fw-medium: 500;
+  --fw-regular: 400;
+
+  /* ── Spacing (8px grid) ── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 40px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* ── Border & Shadow (Neubrutalism) ── */
+  --border-width: 2px;
+  --border: var(--border-width) solid var(--color-border);
+  --shadow: 4px 4px 0px var(--color-border);
+  --shadow-sm: 2px 2px 0px var(--color-border);
+  --shadow-lg: 6px 6px 0px var(--color-border);
+  --shadow-purple: 4px 4px 0px var(--color-primary);
+
+  /* ── Border Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 350ms ease;
+
+  /* ── Layout ── */
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 70px;
+  --topbar-height: 64px;
+  --order-panel-width: 340px;
+}
