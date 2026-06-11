@@ -348,7 +348,7 @@ const saved = loadState();
 export const store = {
   // Menu
   menuItems: saved?.menuItems || [...menuItems],
-  categories: saved?.categories || ['Semua', 'Original', 'Mentai', 'Tartar', 'Mix Saus', 'Goreng', 'Frozen', 'Birthday Platter', 'Party Size', 'Adds On', 'Minuman'],
+  categories: saved?.categories || ['Semua', 'Bakar', 'Goreng', 'Original', 'Mentai', 'Tartar', 'Mix Saus', 'Adds On', 'Minuman'],
 
   // Cart / current order
   cart: saved?.cart || [],
