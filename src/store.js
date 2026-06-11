@@ -899,10 +899,9 @@ export const store = {
   },
 };
 
-// Trigger Supabase sync at startup
+// Trigger Supabase sync sekali saat startup
 syncFromSupabase();
-// Auto-sync setiap 30 detik agar order dari perangkat lain masuk ke report
-setInterval(syncFromSupabase, 30000);
+// Auto-sync dinonaktifkan — gunakan tombol Sync di halaman Reports untuk refresh manual
 
 // Expose sync function agar bisa dipanggil dari halaman lain
 export { syncFromSupabase };
