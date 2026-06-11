@@ -300,10 +300,11 @@ export default function render(container) {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; background: white;">
 
             <!-- Modal Awal -->
-            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border);">
+            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); position: relative;">
               <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 6px;">MODAL AWAL</div>
               <div style="font-size: 20px; font-weight: 800; color: var(--color-text); line-height: 1;">${formatRupiah(pettyCash)}</div>
               <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">Uang awal laci</div>
+              <button id="btn-edit-petty-cash" title="Edit Modal Awal" style="position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border: 2px solid var(--color-border); border-radius: 6px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 2px 2px 0 var(--color-border); transition: box-shadow 0.1s, transform 0.1s;" onmouseover="this.style.boxShadow='1px 1px 0 var(--color-border)';this.style.transform='translate(1px,1px)'" onmouseout="this.style.boxShadow='2px 2px 0 var(--color-border)';this.style.transform=''">✏️</button>
             </div>
 
             <!-- Pemasukan Tunai -->
@@ -786,6 +787,41 @@ export default function render(container) {
             </form>
           </div>
         </div>
+        <!-- Modal Edit Modal Awal Laci -->
+        <div id="modal-edit-petty-cash" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
+          <div class="card animate-scale-in" style="width: 100%; max-width: 420px; padding: var(--space-xl); background: var(--color-white); border: 2px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); border-radius: var(--radius-lg); position: relative;">
+            <div style="position: absolute; top: -2px; left: -2px; right: -2px; height: 10px; background: var(--color-yellow); border: 2px solid var(--color-text); border-bottom: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"></div>
+
+            <div class="flex items-center gap-md" style="margin-bottom: var(--space-lg); margin-top: 8px;">
+              <div style="background: var(--color-yellow); border: 2px solid var(--color-text); border-radius: var(--radius-sm); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 2px 2px 0 var(--color-text); flex-shrink: 0;">💵</div>
+              <div>
+                <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 2px;">Edit Modal Awal Laci</h2>
+                <p class="text-sm text-muted">Koreksi jumlah uang fisik di laci kasir.</p>
+              </div>
+            </div>
+
+            <form id="form-edit-petty-cash">
+              <div class="flex-col gap-xs" style="margin-bottom: var(--space-md);">
+                <label class="text-sm text-bold">Jumlah Modal Awal (Rp)</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                  <span style="position: absolute; left: 14px; font-weight: bold; font-size: 16px; color: var(--color-text-muted);">Rp</span>
+                  <input type="number" class="input" id="input-edit-petty-cash" min="0" placeholder="0" style="padding-left: 44px; height: 48px; font-size: 18px; font-weight: bold; border: 2px solid var(--color-text); box-shadow: 2px 2px 0 var(--color-text); border-radius: var(--radius-sm); width: 100%;">
+                </div>
+              </div>
+
+              <div style="background: #fffbeb; border: 1px dashed #d97706; border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; gap: 8px; align-items: flex-start;">
+                <span style="font-size: 16px; flex-shrink:0;">⚠️</span>
+                <p class="text-xs" style="color: #92400e; line-height: 1.5; font-weight: 500;">Perubahan ini hanya mengkoreksi <b>modal awal</b>. Waktu buka shift tidak akan berubah. Pastikan jumlah sesuai uang fisik di laci.</p>
+              </div>
+
+              <div class="flex gap-sm">
+                <button type="button" class="btn btn-outline flex-1" id="btn-cancel-edit-petty-cash">Batal</button>
+                <button type="submit" class="btn btn-yellow flex-1" style="border: 2px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); font-weight: bold;">💾 Simpan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
       </div>
     `;
 
@@ -1142,6 +1178,48 @@ export default function render(container) {
         }, 1500);
       });
     });
+
+    // ── Edit Petty Cash Modal ──
+    const btnEditPettyCash = container.querySelector('#btn-edit-petty-cash');
+    const modalEditPettyCash = container.querySelector('#modal-edit-petty-cash');
+    const formEditPettyCash = container.querySelector('#form-edit-petty-cash');
+    const inputEditPettyCash = container.querySelector('#input-edit-petty-cash');
+
+    if (btnEditPettyCash && modalEditPettyCash) {
+      btnEditPettyCash.addEventListener('click', () => {
+        // Pre-fill dengan nilai saat ini
+        if (inputEditPettyCash) inputEditPettyCash.value = store.shift?.pettyCash || 0;
+        modalEditPettyCash.style.display = 'flex';
+        setTimeout(() => inputEditPettyCash?.select(), 50);
+      });
+
+      const closeEditPettyCashModal = () => {
+        modalEditPettyCash.style.display = 'none';
+        formEditPettyCash?.reset();
+      };
+
+      container.querySelector('#btn-cancel-edit-petty-cash')?.addEventListener('click', closeEditPettyCashModal);
+
+      // Klik backdrop untuk tutup
+      modalEditPettyCash.addEventListener('click', (e) => {
+        if (e.target === modalEditPettyCash) closeEditPettyCashModal();
+      });
+
+      formEditPettyCash?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newAmount = Number(inputEditPettyCash?.value) || 0;
+        store.updatePettyCash(newAmount);
+
+        // Toast konfirmasi
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;padding:12px 20px;border:2px solid #111827;box-shadow:4px 4px 0 #111827;border-radius:8px;background:#fef9c3;font-weight:bold;font-size:14px;color:#713f12;font-family:inherit;display:flex;align-items:center;gap:8px;';
+        toast.innerHTML = `<span style="font-size:18px;">✅</span> Modal awal laci diperbarui ke <b>${newAmount.toLocaleString('id-ID', {style:'currency',currency:'IDR',maximumFractionDigits:0})}</b>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+
+        closeEditPettyCashModal();
+      });
+    }
 
     if (btnOpenStore) {
       btnOpenStore.addEventListener('click', () => {

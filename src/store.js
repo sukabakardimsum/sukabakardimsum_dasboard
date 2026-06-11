@@ -617,6 +617,16 @@ export const store = {
     this.notify();
   },
 
+  updatePettyCash(newAmount) {
+    this.shift = {
+      ...this.shift,
+      pettyCash: newAmount,
+    };
+    db.updateStoreStatus(this.shift.isOpen, this.shift.startTime, newAmount);
+    this.notify();
+  },
+
+
   closeShift() {
     this.shift = {
       isOpen: false,
