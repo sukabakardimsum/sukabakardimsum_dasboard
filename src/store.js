@@ -371,34 +371,9 @@ async function syncFromSupabase() {
   }
 }
 
-function loadState() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch (e) { /* ignore */ }
-  return null;
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      orders: store.orders,
-      cart: store.cart,
-      currentUser: store.currentUser,
-      shift: store.shift,
-      settings: store.settings,
-      expenses: store.expenses,
-      staff: store.staff,
-      menuItems: store.menuItems,
-      categories: store.categories,
-      notifications: store.notifications,
-      tables: store.tables,
-      inventory: store.inventory,
-    }));
-  } catch (e) { /* ignore */ }
-}
 
 const saved = loadState();
+
 
 export const store = {
   // Menu — diisi dari Supabase sync, tidak dari localStorage
