@@ -424,7 +424,12 @@ export const store = {
     return this.subscribe(() => {
       if (document.body.contains(container)) {
         const activeEl = document.activeElement;
-        const isUserTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA');
+        const inputType = activeEl?.type?.toLowerCase();
+        const isUserTyping = activeEl && (
+          ((activeEl.tagName === 'INPUT') && inputType !== 'checkbox' && inputType !== 'radio') ||
+          activeEl.tagName === 'SELECT' ||
+          activeEl.tagName === 'TEXTAREA'
+        );
         const isModalOpen = Array.from(container.querySelectorAll('[id^="modal-"]')).some(modal => {
           return modal && (modal.style.display === 'flex' || modal.style.display === 'block');
         });

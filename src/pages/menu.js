@@ -335,6 +335,21 @@ export default function render(container) {
       chk.addEventListener('change', () => {
         const tr = chk.closest('tr');
         const id = tr.dataset.id;
+
+        // Update visual state langsung (instan, sebelum re-render)
+        const isNowAvailable = chk.checked;
+        const dot = chk.closest('label')?.querySelector('.slider-dot');
+        const label = chk.closest('td')?.querySelector('span.text-bold');
+        if (dot) {
+          dot.style.transform = isNowAvailable ? 'translateX(24px)' : '';
+          dot.style.backgroundColor = isNowAvailable ? 'var(--color-success)' : 'var(--color-border)';
+        }
+        if (label) {
+          label.textContent = isNowAvailable ? 'Tersedia' : 'HABIS';
+          label.className = `text-bold ${isNowAvailable ? 'text-success' : 'text-error'}`;
+          label.style.fontSize = '14px';
+        }
+
         store.toggleMenuAvailability(id);
       });
     });
