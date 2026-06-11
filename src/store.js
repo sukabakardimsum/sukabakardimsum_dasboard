@@ -2,14 +2,43 @@
 // Central Data Store with localStorage persistence & Supabase Sync
 // ============================================================
 import { uid, formatRupiah } from './utils.js';
-import { menuItems } from './data/menu.js';
-import { sampleOrders } from './data/orders.js';
-import { sampleStaff } from './data/staff.js';
-import { sampleTables } from './data/tables.js';
-import { sampleExpenses } from './data/expenses.js';
 import { supabase } from './supabase.js';
 
+
 const STORAGE_KEY = 'kedai_pojok_13_pos';
+const STORAGE_VERSION = 2; // Naikkan versi ini jika struktur localStorage berubah drastis
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Jika versi lama, hapus localStorage agar tidak bentrok dengan data Supabase
+      if (!parsed._version || parsed._version < STORAGE_VERSION) {
+        console.log('🔄 localStorage versi lama terdeteksi, reset ke Supabase...');
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return parsed;
+    }
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function saveState() {
+  try {
+    // Hanya simpan data SESI — master data (menu, staff, orders, dll) dikelola Supabase
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      _version: STORAGE_VERSION,
+      cart: store.cart,
+      currentUser: store.currentUser,
+      shift: store.shift,
+      settings: store.settings,
+      notifications: store.notifications,
+      inventory: store.inventory,
+    }));
+  } catch (e) { /* ignore */ }
+}
 
 const db = {
   pushOrder(order) {
@@ -346,62 +375,61 @@ function saveState() {
 const saved = loadState();
 
 export const store = {
-  // Menu
-  menuItems: saved?.menuItems || [...menuItems],
-  categories: saved?.categories || ['Semua', 'Bakar', 'Goreng', 'Original', 'Mentai', 'Tartar', 'Mix Saus', 'Adds On', 'Minuman'],
+  // Menu — diisi dari Supabase sync, tidak dari localStorage
+  menuItems: [],
+  categories: ['Semua', 'Bakar', 'Goreng', 'Original', 'Mentai', 'Tartar', 'Mix Saus', 'Adds On', 'Minuman'],
 
-  // Cart / current order
+  // Cart / current order — disimpan di localStorage (state sesi)
   cart: saved?.cart || [],
   customerName: '',
-  serviceType: 'dine-in', // 'dine-in' or 'takeaway'
+  serviceType: 'dine-in',
   selectedTable: null,
 
-  // Notifications
+  // Notifications — disimpan di localStorage
   notifications: saved?.notifications || [],
 
-  // Orders history
-  orders: saved?.orders || [...sampleOrders],
+  // Orders — diisi dari Supabase sync
+  orders: [],
   // Order number resets daily — stored with today's date as key
   nextOrderNumber: (() => {
     const todayKey = new Date().toLocaleDateString('id-ID');
     const saved_date = localStorage.getItem('orderDate');
     const saved_num  = parseInt(localStorage.getItem('nextOrderNum') || '1');
     if (saved_date === todayKey) return saved_num;
-    // New day — reset to 1
     localStorage.setItem('orderDate', todayKey);
     localStorage.setItem('nextOrderNum', '1');
     return 1;
   })(),
 
-  // Staff
-  staff: saved?.staff || [...sampleStaff],
+  // Staff — diisi dari Supabase sync
+  staff: [],
 
-  // Tables (persisted to localStorage)
-  tables: saved?.tables || [...sampleTables],
+  // Tables — diisi dari Supabase sync
+  tables: [],
 
-  // Expenses
-  expenses: saved?.expenses || [...sampleExpenses],
+  // Expenses — diisi dari Supabase sync
+  expenses: [],
 
-  // Inventory
+  // Inventory — tidak ada tabel Supabase, tetap di localStorage
   inventory: saved?.inventory || [
-    { id: 'inv-1', name: 'Kulit Pangsit', category: 'Bahan Baku', stock: 0, unit: 'Lembar', icon: '🥟' },
-    { id: 'inv-2', name: 'Daging Ayam Fillet', category: 'Bahan Baku', stock: 0, unit: 'Kg', icon: '🥩' },
-    { id: 'inv-3', name: 'Teh Celup Oolong', category: 'Minuman', stock: 0, unit: 'Box', icon: '🍵' },
-    { id: 'inv-4', name: 'Box Packaging L', category: 'Lainnya', stock: 0, unit: 'Pcs', icon: '📦' },
+    { id: 'inv-1', name: 'Kulit Pangsit',      category: 'Bahan Baku', stock: 0, unit: 'Lembar', icon: '🥟' },
+    { id: 'inv-2', name: 'Daging Ayam Fillet', category: 'Bahan Baku', stock: 0, unit: 'Kg',     icon: '🥩' },
+    { id: 'inv-3', name: 'Teh Celup Oolong',   category: 'Minuman',    stock: 0, unit: 'Box',    icon: '🍵' },
+    { id: 'inv-4', name: 'Box Packaging L',    category: 'Lainnya',    stock: 0, unit: 'Pcs',    icon: '📦' },
   ],
 
-  // Current user / auth
+  // Current user / auth — disimpan di localStorage
   currentUser: saved?.currentUser || null,
   isLoggedIn: !!saved?.currentUser,
 
-  // Shift
+  // Shift — disimpan di localStorage
   shift: saved?.shift || {
     isOpen: false,
     startTime: null,
     pettyCash: 0,
   },
 
-  // Settings
+  // Settings — disimpan di localStorage
   settings: saved?.settings || {
     storeName: 'Suka Bakar Dimsum',
     storeSubtitle: 'Dimsum & More',
