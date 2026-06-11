@@ -50,14 +50,22 @@ function renderSidebar(activePage) {
 export default function render(container) {
   let activeCategory = 'Semua';
   let searchQuery = '';
+  let sortBy = 'default'; // 'default' | 'category' | 'price'
 
   const renderContent = () => {
-    let filteredMenu = store.menuItems;
+    let filteredMenu = [...store.menuItems];
     if (activeCategory !== 'Semua') {
       filteredMenu = filteredMenu.filter(item => item.category === activeCategory);
     }
     if (searchQuery) {
       filteredMenu = filteredMenu.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    // Sorting
+    if (sortBy === 'category') {
+      filteredMenu.sort((a, b) => a.category.localeCompare(b.category) || a.price - b.price);
+    } else if (sortBy === 'price') {
+      filteredMenu.sort((a, b) => a.price - b.price);
     }
 
     container.innerHTML = `
@@ -90,6 +98,34 @@ export default function render(container) {
                 ${store.categories.map(cat => `
                   <button class="chip ${cat === activeCategory ? 'active chip-purple' : ''}" data-category="${cat}" style="${cat === activeCategory ? 'background: var(--color-border); color: white;' : ''}">${cat}</button>
                 `).join('')}
+              </div>
+
+              <!-- Sort Buttons -->
+              <div class="flex gap-xs" style="flex-shrink: 0;">
+                <button id="sort-by-category" title="Urutkan A-Z per Kategori" style="
+                  height: 36px; padding: 0 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;
+                  display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: var(--font-family);
+                  border: 2px solid var(--color-text);
+                  box-shadow: ${sortBy === 'category' ? 'none' : '2px 2px 0 var(--color-text)'};
+                  transform: ${sortBy === 'category' ? 'translate(2px,2px)' : ''};
+                  background: ${sortBy === 'category' ? '#111827' : 'white'};
+                  color: ${sortBy === 'category' ? 'white' : 'var(--color-text)'};
+                ">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+                  Kategori
+                </button>
+                <button id="sort-by-price" title="Urutkan harga terkecil ke terbesar" style="
+                  height: 36px; padding: 0 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;
+                  display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: var(--font-family);
+                  border: 2px solid var(--color-text);
+                  box-shadow: ${sortBy === 'price' ? 'none' : '2px 2px 0 var(--color-text)'};
+                  transform: ${sortBy === 'price' ? 'translate(2px,2px)' : ''};
+                  background: ${sortBy === 'price' ? '#111827' : 'white'};
+                  color: ${sortBy === 'price' ? 'white' : 'var(--color-text)'};
+                ">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Harga ↑
+                </button>
               </div>
             </div>
 
@@ -244,6 +280,16 @@ export default function render(container) {
 
   const attachListeners = () => {
     setupTopbarListeners(container);
+    // Sort Buttons
+    container.querySelector('#sort-by-category')?.addEventListener('click', () => {
+      sortBy = sortBy === 'category' ? 'default' : 'category';
+      renderContent();
+    });
+    container.querySelector('#sort-by-price')?.addEventListener('click', () => {
+      sortBy = sortBy === 'price' ? 'default' : 'price';
+      renderContent();
+    });
+
     // Chips Listeners
     container.querySelectorAll('.chip').forEach(btn => {
       btn.addEventListener('click', (e) => {

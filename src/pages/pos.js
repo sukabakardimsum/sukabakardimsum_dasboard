@@ -56,18 +56,25 @@ export default function render(container) {
   let activeCategory = 'Semua';
   let searchQuery = '';
   let activeOrderTab = 'buat'; // 'buat' | 'konfirmasi'
+  let sortBy = 'default'; // 'default' | 'category' | 'price'
 
   const renderContent = () => {
     const pendingOrders = store.orders.filter(o => o.status === 'pending');
     const pendingCount = pendingOrders.length;
 
     // Filter menu items
-    let filteredMenu = store.menuItems;
+    let filteredMenu = [...store.menuItems];
     if (activeCategory !== 'Semua') {
       filteredMenu = filteredMenu.filter(item => item.category === activeCategory);
     }
     if (searchQuery) {
       filteredMenu = filteredMenu.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    // Sort
+    if (sortBy === 'category') {
+      filteredMenu.sort((a, b) => a.category.localeCompare(b.category) || a.price - b.price);
+    } else if (sortBy === 'price') {
+      filteredMenu.sort((a, b) => a.price - b.price);
     }
 
     // Tab: Konfirmasi Pesanan content
@@ -152,7 +159,25 @@ export default function render(container) {
             <button class="chip ${cat === activeCategory ? 'active' : ''}" data-category="${cat}">${cat}</button>
           `).join('')}
         </div>
-        <div class="product-grid">
+        <div class="product-grid" style="padding-top: 0;">
+          <!-- Sort bar -->
+          <div style="grid-column: 1/-1; display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+            <span style="font-size:11px; font-weight:700; color:var(--color-text-muted); letter-spacing:.5px;">URUT:</span>
+            <button id="pos-sort-category" style="
+              height:28px; padding:0 10px; border-radius:20px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-family);
+              border: 1.5px solid var(--color-text);
+              background: ${sortBy==='category'?'#111827':'white'};
+              color: ${sortBy==='category'?'white':'var(--color-text)'};
+              box-shadow: ${sortBy==='category'?'none':'1px 1px 0 var(--color-text)'};
+            ">≡ Kategori</button>
+            <button id="pos-sort-price" style="
+              height:28px; padding:0 10px; border-radius:20px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-family);
+              border: 1.5px solid var(--color-text);
+              background: ${sortBy==='price'?'#111827':'white'};
+              color: ${sortBy==='price'?'white':'var(--color-text)'};
+              box-shadow: ${sortBy==='price'?'none':'1px 1px 0 var(--color-text)'};
+            ">↑ Harga</button>
+          </div>
           ${filteredMenu.map(item => `
             <div class="product-card ${item.available ? 'card-interactive' : ''}" data-id="${item.id}" style="${!item.available ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
               <span class="price-badge price-badge-${item.badgeColor}">${formatRupiah(item.price)}</span>
@@ -285,6 +310,16 @@ export default function render(container) {
   };
 
   const attachListeners = () => {
+    // Sort buttons POS
+    container.querySelector('#pos-sort-category')?.addEventListener('click', () => {
+      sortBy = sortBy === 'category' ? 'default' : 'category';
+      renderContent();
+    });
+    container.querySelector('#pos-sort-price')?.addEventListener('click', () => {
+      sortBy = sortBy === 'price' ? 'default' : 'price';
+      renderContent();
+    });
+
     // Categories
     $$('.chip').forEach(el => {
       el.addEventListener('click', () => {
