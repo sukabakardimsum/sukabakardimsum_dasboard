@@ -50,7 +50,8 @@ function renderSidebar(activePage) {
 export default function render(container) {
   let activeCategory = 'Semua';
   let searchQuery = '';
-  let sortBy = 'default'; // 'default' | 'category' | 'price'
+  let sortBy  = 'default'; // 'default' | 'name' | 'category' | 'price'
+  let sortDir = 'asc';     // 'asc' | 'desc'
 
   const renderContent = () => {
     let filteredMenu = [...store.menuItems];
@@ -63,9 +64,17 @@ export default function render(container) {
 
     // Sorting
     if (sortBy === 'category') {
-      filteredMenu.sort((a, b) => a.category.localeCompare(b.category) || a.price - b.price);
+      filteredMenu.sort((a, b) => {
+        const cmp = a.category.localeCompare(b.category);
+        return sortDir === 'asc' ? cmp || a.price - b.price : -cmp || b.price - a.price;
+      });
+    } else if (sortBy === 'name') {
+      filteredMenu.sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name);
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
     } else if (sortBy === 'price') {
-      filteredMenu.sort((a, b) => a.price - b.price);
+      filteredMenu.sort((a, b) => sortDir === 'asc' ? a.price - b.price : b.price - a.price);
     }
 
     container.innerHTML = `
@@ -99,45 +108,47 @@ export default function render(container) {
                   <button class="chip ${cat === activeCategory ? 'active chip-purple' : ''}" data-category="${cat}" style="${cat === activeCategory ? 'background: var(--color-border); color: white;' : ''}">${cat}</button>
                 `).join('')}
               </div>
-
-              <!-- Sort Buttons -->
-              <div class="flex gap-xs" style="flex-shrink: 0;">
-                <button id="sort-by-category" title="Urutkan A-Z per Kategori" style="
-                  height: 36px; padding: 0 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;
-                  display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: var(--font-family);
-                  border: 2px solid var(--color-text);
-                  box-shadow: ${sortBy === 'category' ? 'none' : '2px 2px 0 var(--color-text)'};
-                  transform: ${sortBy === 'category' ? 'translate(2px,2px)' : ''};
-                  background: ${sortBy === 'category' ? '#111827' : 'white'};
-                  color: ${sortBy === 'category' ? 'white' : 'var(--color-text)'};
-                ">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-                  Kategori
-                </button>
-                <button id="sort-by-price" title="Urutkan harga terkecil ke terbesar" style="
-                  height: 36px; padding: 0 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;
-                  display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: var(--font-family);
-                  border: 2px solid var(--color-text);
-                  box-shadow: ${sortBy === 'price' ? 'none' : '2px 2px 0 var(--color-text)'};
-                  transform: ${sortBy === 'price' ? 'translate(2px,2px)' : ''};
-                  background: ${sortBy === 'price' ? '#111827' : 'white'};
-                  color: ${sortBy === 'price' ? 'white' : 'var(--color-text)'};
-                ">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  Harga ↑
-                </button>
-              </div>
             </div>
 
             <!-- Table Menu Items -->
             <div class="table-container">
+              <style>
+                .th-sort {
+                  cursor: pointer;
+                  user-select: none;
+                  transition: background 0.15s;
+                  white-space: nowrap;
+                }
+                .th-sort:hover {
+                  background: #f3f4f6;
+                }
+                .th-sort.active {
+                  background: #111827;
+                  color: white;
+                }
+                .sort-arrow {
+                  display: inline-block;
+                  margin-left: 4px;
+                  font-size: 11px;
+                  opacity: 0.7;
+                }
+              </style>
               <table class="table">
                 <thead>
                   <tr>
                     <th style="width: 80px;">IKON</th>
-                    <th>NAMA MENU</th>
-                    <th>KATEGORI</th>
-                    <th>HARGA</th>
+                    <th class="th-sort ${sortBy==='name'?'active':''}" data-sort="name">
+                      NAMA MENU
+                      <span class="sort-arrow">${sortBy==='name'?(sortDir==='asc'?'↑':'↓'):'↕'}</span>
+                    </th>
+                    <th class="th-sort ${sortBy==='category'?'active':''}" data-sort="category">
+                      KATEGORI
+                      <span class="sort-arrow">${sortBy==='category'?(sortDir==='asc'?'↑':'↓'):'↕'}</span>
+                    </th>
+                    <th class="th-sort ${sortBy==='price'?'active':''}" data-sort="price">
+                      HARGA
+                      <span class="sort-arrow">${sortBy==='price'?(sortDir==='asc'?'↑':'↓'):'↕'}</span>
+                    </th>
                     <th>STATUS KETERSEDIAAN</th>
                     <th style="text-align: center; width: 100px;">AKSI</th>
                   </tr>
@@ -280,14 +291,19 @@ export default function render(container) {
 
   const attachListeners = () => {
     setupTopbarListeners(container);
-    // Sort Buttons
-    container.querySelector('#sort-by-category')?.addEventListener('click', () => {
-      sortBy = sortBy === 'category' ? 'default' : 'category';
-      renderContent();
-    });
-    container.querySelector('#sort-by-price')?.addEventListener('click', () => {
-      sortBy = sortBy === 'price' ? 'default' : 'price';
-      renderContent();
+    // Sort Buttons — sekarang di column header
+    container.querySelectorAll('.th-sort').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (sortBy === col) {
+          // Toggle arah jika klik kolom yang sama
+          sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortBy  = col;
+          sortDir = 'asc';
+        }
+        renderContent();
+      });
     });
 
     // Chips Listeners
