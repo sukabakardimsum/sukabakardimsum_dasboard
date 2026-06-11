@@ -134,12 +134,38 @@ const db = {
   updateMenuItem(id, fields) {
     if (!supabase) return;
     supabase.from('menu_items').update({
-      name: fields.name,
-      price: fields.price,
-      available: fields.available,
-      stock: fields.stock
-    }).eq('id', id).then(null, e => console.error(e));
+      name:        fields.name,
+      category:    fields.category,
+      price:       fields.price,
+      emoji:       fields.emoji,
+      description: fields.description,
+      stock:       fields.stock,
+      available:   fields.available,
+      badge_color: fields.badgeColor,
+    }).eq('id', id).then(null, e => console.error('Error updating menu_item:', e));
   },
+  pushMenuItem(item) {
+    if (!supabase) return;
+    supabase.from('menu_items').insert({
+      id:          item.id,
+      name:        item.name,
+      category:    item.category,
+      price:       item.price,
+      emoji:       item.emoji       || '🥟',
+      description: item.description || '',
+      stock:       item.stock       ?? 0,
+      available:   item.available   ?? true,
+      badge_color: item.badgeColor  || 'yellow',
+    }).then(({ error }) => {
+      if (error) console.error('Error inserting menu_item:', error);
+    });
+  },
+  deleteMenuItem(id) {
+    if (!supabase) return;
+    supabase.from('menu_items').delete().eq('id', id)
+      .then(null, e => console.error('Error deleting menu_item:', e));
+  },
+
   updateStoreStatus(isOpen, startTime, pettyCash) {
     if (!supabase) return;
     supabase.from('store_status').upsert({
@@ -788,20 +814,21 @@ export const store = {
   // ── Menu Actions ──
   addMenuItem(item) {
     this.menuItems.push(item);
+    db.pushMenuItem(item);          // 🔄 Sync ke Supabase
     this.notify();
   },
 
   updateMenuItem(id, updatedFields) {
     this.menuItems = this.menuItems.map(item => item.id === id ? { ...item, ...updatedFields } : item);
     const item = this.menuItems.find(i => i.id === id);
-    if (item) db.updateMenuItem(id, item);
+    if (item) db.updateMenuItem(id, item); // 🔄 Sync ke Supabase
     this.notify();
   },
 
   toggleMenuAvailability(id) {
     this.menuItems = this.menuItems.map(item => item.id === id ? { ...item, available: !item.available } : item);
     const item = this.menuItems.find(i => i.id === id);
-    if (item) db.updateMenuItem(id, item);
+    if (item) db.updateMenuItem(id, item); // 🔄 Sync ke Supabase
     this.notify();
   },
 
@@ -814,6 +841,7 @@ export const store = {
 
   deleteMenuItem(id) {
     this.menuItems = this.menuItems.filter(item => item.id !== id);
+    db.deleteMenuItem(id);          // 🔄 Sync ke Supabase
     this.notify();
   },
 
