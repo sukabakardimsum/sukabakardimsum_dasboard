@@ -2,6 +2,13 @@ import { store } from '../store.js';
 import { icons, formatRupiah, $ } from '../utils.js';
 import { renderSharedTopbar, setupTopbarListeners } from '../topbar.js';
 
+// Helper: force-sync dari Supabase (akses melalui window.store internal)
+const triggerSync = () => {
+  // Re-trigger syncFromSupabase via re-import workaround: dispatch custom event
+  document.dispatchEvent(new CustomEvent('force-supabase-sync'));
+};
+
+
 function renderSidebar(activePage) {
   const navItems = [
     { id: 'pos', label: 'Order', icon: icons.restaurant, route: '#/order' },
@@ -121,25 +128,32 @@ export default function render(container) {
       filterDate.setHours(0, 0, 0, 0);
     }
 
-    // Filter orders by comparing local dates (not ISO strings to avoid timezone issues)
-    const getLocalDateOnly = (dateStr) => {
-      const d = new Date(dateStr);
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    };
-    
-    const getLocalDateOnlyFromDate = (date) => {
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    // Filter orders by WIB (UTC+7) local date — robust timezone-aware comparison
+    const toWIBDateOnly = (dateStr) => {
+      // Parse the date and shift to WIB (UTC+7)
+      const utcMs = new Date(dateStr).getTime();
+      const wibMs = utcMs + 7 * 60 * 60 * 1000; // +7 jam
+      const wibDate = new Date(wibMs);
+      // Return midnight WIB date (UTC representation)
+      return new Date(Date.UTC(wibDate.getUTCFullYear(), wibDate.getUTCMonth(), wibDate.getUTCDate()));
     };
 
-    const filterDateOnly = getLocalDateOnlyFromDate(filterDate);
+    const toWIBDateOnlyFromLocal = (date) => {
+      // filterDate is already in local time (WIB) with hours=0
+      return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    };
+
+    const filterDateOnly = toWIBDateOnlyFromLocal(filterDate);
     
     const filteredOrders = store.orders.filter(o => {
-      const orderDateOnly = getLocalDateOnly(o.createdAt);
+      if (!o.createdAt) return false;
+      const orderDateOnly = toWIBDateOnly(o.createdAt);
       return orderDateOnly >= filterDateOnly && o.status === 'completed';
     });
     
     const filteredExpenses = store.expenses.filter(e => {
-      const expenseDateOnly = getLocalDateOnly(e.date);
+      if (!e.date) return false;
+      const expenseDateOnly = toWIBDateOnly(e.date);
       return expenseDateOnly >= filterDateOnly;
     });
 
@@ -585,6 +599,10 @@ export default function render(container) {
                 ` : `
                   <button class="btn btn-outline text-error" id="btn-close-store" style="height: 40px; border-color: var(--color-error); border-width: 2px; box-shadow: 2px 2px 0 var(--color-error); font-weight: bold;">Tutup Toko</button>
                 `}
+                <button class="btn btn-outline" id="btn-sync-reports" title="Sync data dari server" style="height: 40px; border: 2px solid var(--color-border); box-shadow: 2px 2px 0 var(--color-border); font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                  <svg id="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                  Sync
+                </button>
                 <button class="btn btn-yellow btn-sm" id="btn-export" style="height: 40px; border: 2px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); color: var(--color-text); font-weight: bold; display: flex; align-items: center; gap: 8px;">
                   ${icons.download} Export
                 </button>
@@ -834,6 +852,43 @@ export default function render(container) {
     const modalStore = container.querySelector('#modal-open-store');
     const formStore = container.querySelector('#form-open-store');
     const inputPettyCash = container.querySelector('#input-petty-cash');
+
+    // ── Tombol Sync Ulang ──
+    const btnSync = container.querySelector('#btn-sync-reports');
+    if (btnSync) {
+      btnSync.addEventListener('click', async () => {
+        const syncIcon = btnSync.querySelector('#sync-icon');
+        btnSync.disabled = true;
+        btnSync.style.opacity = '0.7';
+        if (syncIcon) {
+          syncIcon.style.animation = 'spin 0.8s linear infinite';
+          if (!document.getElementById('spin-style')) {
+            const s = document.createElement('style');
+            s.id = 'spin-style';
+            s.innerHTML = '@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
+            document.head.appendChild(s);
+          }
+        }
+
+        // Trigger sync
+        document.dispatchEvent(new CustomEvent('force-supabase-sync'));
+
+        // Tunggu sync selesai lalu re-render
+        await new Promise(r => setTimeout(r, 2000));
+        renderContent();
+
+        btnSync.disabled = false;
+        btnSync.style.opacity = '1';
+        if (syncIcon) syncIcon.style.animation = '';
+
+        // Toast sukses
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;padding:12px 20px;border:2px solid #111827;box-shadow:4px 4px 0 #111827;border-radius:8px;background:#d1fae5;font-weight:bold;font-size:14px;color:#065f46;font-family:inherit;display:flex;align-items:center;gap:8px;';
+        toast.innerHTML = `<span style="font-size:18px;">✅</span> Data berhasil disinkronkan dari server!`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      });
+    }
 
     // Export Dropdown Listeners
     const btnExport = container.querySelector('#btn-export');

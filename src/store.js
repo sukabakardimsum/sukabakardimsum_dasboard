@@ -49,6 +49,17 @@ const db = {
     if (!supabase) return;
     supabase.from('orders').update({ status }).eq('id', id).then(null, e => console.error(e));
   },
+  updateOrder(id, fields) {
+    if (!supabase) return;
+    const updateData = {};
+    if (fields.customerName !== undefined) updateData.customer_name = fields.customerName;
+    if (fields.serviceType  !== undefined) updateData.service_type  = fields.serviceType;
+    if (fields.table        !== undefined) updateData.table_name    = fields.table;
+    if (fields.total        !== undefined) updateData.total         = fields.total;
+    if (fields.status       !== undefined) updateData.status        = fields.status;
+    if (fields.notes        !== undefined) updateData.notes         = fields.notes;
+    supabase.from('orders').update(updateData).eq('id', id).then(null, e => console.error(e));
+  },
   pushTable(table) {
     if (!supabase) return;
     supabase.from('tables').insert({
@@ -542,6 +553,7 @@ export const store = {
 
   updateOrder(id, updatedFields) {
     this.orders = this.orders.map(o => o.id === id ? { ...o, ...updatedFields } : o);
+    db.updateOrder(id, updatedFields);
     this.notify();
   },
 
@@ -887,10 +899,16 @@ export const store = {
   },
 };
 
-// Trigger Supabase sync at startup and poll every 5 seconds
+// Trigger Supabase sync at startup
 syncFromSupabase();
-// setInterval(syncFromSupabase, 5000); // DISABLED: Auto-refresh disabled
+// Auto-sync setiap 30 detik agar order dari perangkat lain masuk ke report
+setInterval(syncFromSupabase, 30000);
 
+// Expose sync function agar bisa dipanggil dari halaman lain
+export { syncFromSupabase };
+
+// Event listener untuk force-sync dari halaman manapun
 if (typeof window !== 'undefined') {
+  document.addEventListener('force-supabase-sync', () => syncFromSupabase());
   window.store = store;
 }
