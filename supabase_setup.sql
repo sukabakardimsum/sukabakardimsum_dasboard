@@ -165,7 +165,8 @@ INSERT INTO staff (id, name, role, pin, active, initials) VALUES
 ('staff-1', 'Rizal', 'Owner', '1110', TRUE, 'RZ'),
 ('staff-2', 'Yanuar', 'Owner', '0000', TRUE, 'YN'),
 ('staff-3', 'Genta', 'Cashier', '0000', TRUE, 'GT'),
-('staff-4', 'Fathur', 'Kitchen', '0000', FALSE, 'FT');
+('staff-4', 'Fathur', 'Kitchen', '0000', FALSE, 'FT'),
+('staff-5', 'Omo', 'Manager', '0000', FALSE, 'OM');
 
 -- Seed Data: store_status
 INSERT INTO store_status (id, is_open, opened_at, petty_cash) VALUES

@@ -107,18 +107,41 @@ export default function render(container) {
     // Calculate dynamic values for filters
     const now = new Date();
     let filterDate = new Date();
+    
     if (timeFilter === 'today') {
       filterDate.setHours(0, 0, 0, 0);
     } else if (timeFilter === 'week') {
       filterDate.setDate(now.getDate() - 7);
+      filterDate.setHours(0, 0, 0, 0);
     } else if (timeFilter === 'month') {
       filterDate.setMonth(now.getMonth() - 1);
+      filterDate.setHours(0, 0, 0, 0);
     } else {
       filterDate.setFullYear(now.getFullYear() - 1);
+      filterDate.setHours(0, 0, 0, 0);
     }
 
-    const filteredOrders = store.orders.filter(o => o.createdAt >= filterDate.toISOString() && o.status === 'completed');
-    const filteredExpenses = store.expenses.filter(e => e.date >= filterDate.toISOString());
+    // Filter orders by comparing local dates (not ISO strings to avoid timezone issues)
+    const getLocalDateOnly = (dateStr) => {
+      const d = new Date(dateStr);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+    
+    const getLocalDateOnlyFromDate = (date) => {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    };
+
+    const filterDateOnly = getLocalDateOnlyFromDate(filterDate);
+    
+    const filteredOrders = store.orders.filter(o => {
+      const orderDateOnly = getLocalDateOnly(o.createdAt);
+      return orderDateOnly >= filterDateOnly && o.status === 'completed';
+    });
+    
+    const filteredExpenses = store.expenses.filter(e => {
+      const expenseDateOnly = getLocalDateOnly(e.date);
+      return expenseDateOnly >= filterDateOnly;
+    });
 
     const sales = filteredOrders.reduce((sum, o) => sum + o.total, 0);
     const orders = filteredOrders.length;
