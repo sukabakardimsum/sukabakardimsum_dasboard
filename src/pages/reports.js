@@ -234,15 +234,28 @@ export default function render(container) {
       });
     }
 
-    // Calculate Payment Method Percentages dynamically
+    // Calculate Payment Method Percentages & Nominal dynamically
     let qrisPct = 0;
     let cashPct = 0;
+    let qrisCount = 0;
+    let cashCount = 0;
+    let cashSales = 0;
+    let qrisSales = 0;
     if (filteredOrders.length > 0) {
-      const qrisCount = filteredOrders.filter(o => o.paymentMethod === 'qris').length;
-      const cashCount = filteredOrders.filter(o => o.paymentMethod === 'cash').length;
+      qrisCount = filteredOrders.filter(o => o.paymentMethod === 'qris').length;
+      cashCount = filteredOrders.filter(o => o.paymentMethod === 'cash').length;
       qrisPct = Math.round((qrisCount / filteredOrders.length) * 100);
       cashPct = Math.round((cashCount / filteredOrders.length) * 100);
     }
+    cashSales = filteredOrders.filter(o => o.paymentMethod === 'cash').reduce((s, o) => s + o.total, 0);
+    qrisSales = filteredOrders.filter(o => o.paymentMethod === 'qris').reduce((s, o) => s + o.total, 0);
+
+    // Cash Drawer Tracking
+    const pettyCash   = store.shift?.pettyCash || 0;
+    const saldoLaci   = pettyCash + cashSales - expenses;
+    const totalAssets = saldoLaci + qrisSales;
+    const shiftIsOpen = store.shift?.isOpen || false;
+    const shiftStart  = store.shift?.startTime ? new Date(store.shift.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null;
 
     if (activeTab === 'summary') {
       tabContent = `
@@ -264,6 +277,90 @@ export default function render(container) {
             <div class="summary-card-value">${formatRupiah(expenses)}</div>
           </div>
         </div>
+
+        <!-- SALDO LACI & ARUS KAS PANEL -->
+        <div style="margin-bottom: var(--space-xl); border: 2px solid var(--color-text); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 4px 4px 0 var(--color-text);">
+          <!-- Panel Header -->
+          <div style="background: var(--color-text); color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">💵</span>
+              <span style="font-weight: 800; font-size: 16px; letter-spacing: 0.5px;">SALDO LACI & ARUS KAS</span>
+              ${shiftIsOpen
+                ? `<span style="background: #22c55e; color: white; font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 999px; letter-spacing: 0.5px;">● SHIFT AKTIF</span>`
+                : `<span style="background: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 999px; letter-spacing: 0.5px;">● SHIFT TUTUP</span>`
+              }
+            </div>
+            ${shiftIsOpen && shiftStart
+              ? `<span style="font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500;">Shift dibuka pukul ${shiftStart} · Modal: ${formatRupiah(pettyCash)}</span>`
+              : `<span style="font-size: 12px; color: rgba(255,255,255,0.6);">Buka toko untuk mulai tracking saldo laci</span>`
+            }
+          </div>
+
+          <!-- 5 Metric Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; background: white;">
+
+            <!-- Modal Awal -->
+            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border);">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 6px;">MODAL AWAL</div>
+              <div style="font-size: 20px; font-weight: 800; color: var(--color-text); line-height: 1;">${formatRupiah(pettyCash)}</div>
+              <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">Uang awal laci</div>
+            </div>
+
+            <!-- Pemasukan Tunai -->
+            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); background: #f0fdf4;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #15803d; margin-bottom: 6px;">PEMASUKAN TUNAI</div>
+              <div style="font-size: 20px; font-weight: 800; color: #16a34a; line-height: 1;">${formatRupiah(cashSales)}</div>
+              <div style="font-size: 11px; color: #15803d; margin-top: 4px;">${cashCount} transaksi cash</div>
+            </div>
+
+            <!-- Pemasukan QRIS -->
+            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); background: #eff6ff;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #1d4ed8; margin-bottom: 6px;">PEMASUKAN QRIS</div>
+              <div style="font-size: 20px; font-weight: 800; color: #2563eb; line-height: 1;">${formatRupiah(qrisSales)}</div>
+              <div style="font-size: 11px; color: #1d4ed8; margin-top: 4px;">${qrisCount} transaksi QRIS</div>
+            </div>
+
+            <!-- Pengeluaran Kas -->
+            <div style="padding: 18px 20px; border-right: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); background: #fff1f2;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #be123c; margin-bottom: 6px;">PENGELUARAN KAS</div>
+              <div style="font-size: 20px; font-weight: 800; color: #e11d48; line-height: 1;">-${formatRupiah(expenses)}</div>
+              <div style="font-size: 11px; color: #be123c; margin-top: 4px;">Total pengeluaran</div>
+            </div>
+
+            <!-- Saldo Laci Tunai -->
+            <div style="padding: 18px 20px; border-bottom: 2px solid var(--color-border); background: #fffbeb;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #b45309; margin-bottom: 6px;">SALDO LACI TUNAI</div>
+              <div style="font-size: 20px; font-weight: 800; color: ${saldoLaci >= 0 ? '#d97706' : '#dc2626'}; line-height: 1;">${formatRupiah(saldoLaci)}</div>
+              <div style="font-size: 11px; color: #b45309; margin-top: 4px;">Modal + Tunai - Keluar</div>
+            </div>
+
+          </div>
+
+          <!-- Total Aset Banner -->
+          <div style="background: ${totalAssets >= 0 ? '#052e16' : '#450a0a'}; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 18px;">🏦</span>
+              <span style="color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">TOTAL ASET (TUNAI + QRIS)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div style="text-align: right;">
+                <div style="color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600;">Saldo Laci + QRIS</div>
+                <div style="color: #4ade80; font-size: 24px; font-weight: 900; line-height: 1.2;">${formatRupiah(totalAssets)}</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.2);">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div style="width: 8px; height: 8px; border-radius: 2px; background: #4ade80; flex-shrink: 0;"></div>
+                  <span style="color: rgba(255,255,255,0.7); font-size: 11px;">Tunai: ${formatRupiah(saldoLaci)}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div style="width: 8px; height: 8px; border-radius: 2px; background: #60a5fa; flex-shrink: 0;"></div>
+                  <span style="color: rgba(255,255,255,0.7); font-size: 11px;">QRIS: ${formatRupiah(qrisSales)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END SALDO LACI PANEL -->
 
         <div class="flex gap-lg" style="flex-wrap: wrap;">
           <div class="card" style="flex: 2; min-width: 400px; padding: var(--space-xl);">
@@ -308,19 +405,23 @@ export default function render(container) {
               <div class="flex-col gap-md">
                 <div>
                   <div class="flex justify-between text-sm text-bold mb-1" style="margin-bottom: 4px;">
-                    <span>QRIS</span><span>${qrisPct}%</span>
+                    <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--color-primary);"></span>QRIS</span>
+                    <span style="color:var(--color-primary);">${formatRupiah(qrisSales)}</span>
                   </div>
                   <div style="height: 12px; background: var(--color-surface-dim); border-radius: 6px; overflow: hidden; border: 2px solid var(--color-border);">
                     <div style="height: 100%; width: ${qrisPct}%; background: var(--color-primary); ${qrisPct > 0 ? 'border-right: 2px solid var(--color-border);' : ''}"></div>
                   </div>
+                  <div style="font-size:11px;color:var(--color-text-muted);margin-top:3px;">${qrisCount} transaksi · ${qrisPct}%</div>
                 </div>
                 <div>
                   <div class="flex justify-between text-sm text-bold mb-1" style="margin-bottom: 4px;">
-                    <span>Cash</span><span>${cashPct}%</span>
+                    <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d97706;"></span>Cash</span>
+                    <span style="color:#d97706;">${formatRupiah(cashSales)}</span>
                   </div>
                   <div style="height: 12px; background: var(--color-surface-dim); border-radius: 6px; overflow: hidden; border: 2px solid var(--color-border);">
                     <div style="height: 100%; width: ${cashPct}%; background: var(--color-yellow); ${cashPct > 0 ? 'border-right: 2px solid var(--color-border);' : ''}"></div>
                   </div>
+                  <div style="font-size:11px;color:var(--color-text-muted);margin-top:3px;">${cashCount} transaksi · ${cashPct}%</div>
                 </div>
               </div>
             </div>
@@ -749,28 +850,31 @@ export default function render(container) {
           const todayStr = new Date().toLocaleDateString('id-ID');
           
           if (activeTab === 'summary') {
-            // Ringkasan
-            let sales = 12450000;
-            let orders = 342;
-            let expenses = 3850000;
-            
-            if (timeFilter === 'today') {
-              sales = 1450000; orders = 42; expenses = 350000;
-            } else if (timeFilter === 'week') {
-              sales = 8450000; orders = 212; expenses = 2150000;
-            } else if (timeFilter === 'month') {
-              sales = 32450000; orders = 842; expenses = 9850000;
-            }
-            const avg = Math.floor(sales / (orders || 1));
+            // Ringkasan — menggunakan data real
+            const csvAvg = filteredOrders.length > 0 ? Math.floor(sales / filteredOrders.length) : 0;
+            const csvCashSales = filteredOrders.filter(o => o.paymentMethod === 'cash').reduce((s, o) => s + o.total, 0);
+            const csvQrisSales = filteredOrders.filter(o => o.paymentMethod === 'qris').reduce((s, o) => s + o.total, 0);
+            const csvCashCount = filteredOrders.filter(o => o.paymentMethod === 'cash').length;
+            const csvQrisCount = filteredOrders.filter(o => o.paymentMethod === 'qris').length;
+            const csvPettyCash = store.shift?.pettyCash || 0;
+            const csvSaldoLaci = csvPettyCash + csvCashSales - expenses;
+            const csvTotalAssets = csvSaldoLaci + csvQrisSales;
             
             csv += `Laporan Ringkasan Suka Bakar Dimsum\n`;
             csv += `Filter Waktu;${timeFilter.toUpperCase()}\n`;
             csv += `Tanggal Ekspor;${todayStr}\n\n`;
             csv += `METRIK;NILAI\n`;
-            csv += `Total Penjualan;Rp ${sales}\n`;
-            csv += `Jumlah Pesanan;${orders}\n`;
-            csv += `Rata-rata Pesanan;Rp ${avg}\n`;
-            csv += `Total Pengeluaran;Rp ${expenses}\n`;
+            csv += `Total Penjualan;${sales}\n`;
+            csv += `Jumlah Pesanan;${filteredOrders.length}\n`;
+            csv += `Rata-rata Pesanan;${csvAvg}\n`;
+            csv += `Total Pengeluaran;${expenses}\n\n`;
+            csv += `SALDO LACI & ARUS KAS;NILAI\n`;
+            csv += `Modal Awal Laci;${csvPettyCash}\n`;
+            csv += `Pemasukan Tunai (${csvCashCount} transaksi);${csvCashSales}\n`;
+            csv += `Pemasukan QRIS (${csvQrisCount} transaksi);${csvQrisSales}\n`;
+            csv += `Pengeluaran Kas;${expenses}\n`;
+            csv += `Saldo Laci Tunai;${csvSaldoLaci}\n`;
+            csv += `Total Aset (Tunai + QRIS);${csvTotalAssets}\n`;
           } else if (activeTab === 'orders') {
             // Riwayat Pesanan
             const filteredOrders = store.orders.filter(order => {
@@ -846,18 +950,15 @@ export default function render(container) {
           let htmlContent = '';
           
           if (activeTab === 'summary') {
-            let sales = 12450000;
-            let orders = 342;
-            let expenses = 3850000;
-            
-            if (timeFilter === 'today') {
-              sales = 1450000; orders = 42; expenses = 350000;
-            } else if (timeFilter === 'week') {
-              sales = 8450000; orders = 212; expenses = 2150000;
-            } else if (timeFilter === 'month') {
-              sales = 32450000; orders = 842; expenses = 9850000;
-            }
-            const avg = Math.floor(sales / (orders || 1));
+            // PDF Export — menggunakan data real
+            const pdfAvg = filteredOrders.length > 0 ? Math.floor(sales / filteredOrders.length) : 0;
+            const pdfCashSales = filteredOrders.filter(o => o.paymentMethod === 'cash').reduce((s, o) => s + o.total, 0);
+            const pdfQrisSales = filteredOrders.filter(o => o.paymentMethod === 'qris').reduce((s, o) => s + o.total, 0);
+            const pdfCashCount = filteredOrders.filter(o => o.paymentMethod === 'cash').length;
+            const pdfQrisCount = filteredOrders.filter(o => o.paymentMethod === 'qris').length;
+            const pdfPettyCash = store.shift?.pettyCash || 0;
+            const pdfSaldoLaci = pdfPettyCash + pdfCashSales - expenses;
+            const pdfTotalAssets = pdfSaldoLaci + pdfQrisSales;
             
             htmlContent = `
               <h2>RINGKASAN PERFORMA TOKO</h2>
@@ -865,9 +966,19 @@ export default function render(container) {
               <table>
                 <tr><th>METRIK</th><th>NILAI</th></tr>
                 <tr><td>Total Penjualan</td><td>Rp ${sales.toLocaleString('id-ID')}</td></tr>
-                <tr><td>Jumlah Pesanan</td><td>${orders}</td></tr>
-                <tr><td>Rata-rata Pesanan</td><td>Rp ${avg.toLocaleString('id-ID')}</td></tr>
+                <tr><td>Jumlah Pesanan</td><td>${filteredOrders.length}</td></tr>
+                <tr><td>Rata-rata Pesanan</td><td>Rp ${pdfAvg.toLocaleString('id-ID')}</td></tr>
                 <tr><td>Total Pengeluaran</td><td>Rp ${expenses.toLocaleString('id-ID')}</td></tr>
+              </table>
+              <h2>SALDO LACI &amp; ARUS KAS</h2>
+              <table>
+                <tr><th>KOMPONEN</th><th>NILAI</th></tr>
+                <tr><td>Modal Awal Laci</td><td>Rp ${pdfPettyCash.toLocaleString('id-ID')}</td></tr>
+                <tr style="color:green;"><td>Pemasukan Tunai (${pdfCashCount} transaksi)</td><td>Rp ${pdfCashSales.toLocaleString('id-ID')}</td></tr>
+                <tr style="color:blue;"><td>Pemasukan QRIS (${pdfQrisCount} transaksi)</td><td>Rp ${pdfQrisSales.toLocaleString('id-ID')}</td></tr>
+                <tr style="color:red;"><td>Pengeluaran Kas</td><td>Rp ${expenses.toLocaleString('id-ID')}</td></tr>
+                <tr><td><b>Saldo Laci Tunai</b></td><td><b>Rp ${pdfSaldoLaci.toLocaleString('id-ID')}</b></td></tr>
+                <tr style="background:#f0fdf4;"><td><b>TOTAL ASET (Tunai + QRIS)</b></td><td><b>Rp ${pdfTotalAssets.toLocaleString('id-ID')}</b></td></tr>
               </table>
             `;
           } else if (activeTab === 'orders') {
