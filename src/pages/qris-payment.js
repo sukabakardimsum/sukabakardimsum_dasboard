@@ -1,7 +1,6 @@
 import { store } from '../store.js';
 import { navigate } from '../router.js';
 import { formatRupiah, icons, $, $$ } from '../utils.js';
-import QRCode from 'qrcode';
 
 function renderSidebar(activePage) {
   const _role = (store.currentUser?.role || '').toLowerCase();
@@ -110,7 +109,7 @@ export default function render(container) {
 
             <!-- QR Code Image -->
             <div style="padding: 12px 24px; display:flex; flex-direction:column; align-items:center;">
-              <canvas id="qris-canvas" style="width: 100%; max-width: 260px; height: auto; display:block;"></canvas>
+              <img src="/qris-suka-bakar-dimsum.webp" alt="QRIS Suka Bakar Dimsum" style="width: 100%; max-width: 260px; height: auto; display:block;">
             </div>
 
             <!-- Amount Banner -->
@@ -124,7 +123,7 @@ export default function render(container) {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                   Salin Nominal
                 </button>
-                <a href="/qris-kedai-pojok.webp" download="QRIS-Kedai-Pojok-13.webp" id="btn-download-qris" style="height:32px; padding:0 10px; background:#fce354; border:1.5px solid var(--color-text); box-shadow:2px 2px 0 var(--color-text); border-radius:5px; font-size:11px; font-weight:800; color:#111; cursor:pointer; display:flex; align-items:center; gap:5px; text-decoration:none; white-space:nowrap;">
+                <a href="/qris-suka-bakar-dimsum.webp" download="QRIS-Suka-Bakar-Dimsum.webp" id="btn-download-qris" style="height:32px; padding:0 10px; background:#fce354; border:1.5px solid var(--color-text); box-shadow:2px 2px 0 var(--color-text); border-radius:5px; font-size:11px; font-weight:800; color:#111; cursor:pointer; display:flex; align-items:center; gap:5px; text-decoration:none; white-space:nowrap;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download QR
                 </a>
@@ -187,35 +186,6 @@ export default function render(container) {
       </main>
     </div>
   `;
-
-  // Generate Dynamic QRIS QR Code
-  const generateQRIS = async () => {
-    try {
-      // Format: QRIS standar EMV dengan NMID dan amount
-      const nmid = 'ID1026531769952';
-      const merchantName = 'Suka Bakar Dimsum';
-      const qrisData = `00020126360014com.aspi2qris20276${nmid}5204000053033604061088070718507${String(total).padStart(13, '0')}5802ID5913${merchantName.padEnd(25, ' ')}6009Surabaya62290515sukabakar63047AA1`;
-      
-      const canvas = $('#qris-canvas');
-      if (canvas) {
-        await QRCode.toCanvas(canvas, qrisData, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          width: 260,
-          margin: 0,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-      }
-    } catch (err) {
-      console.error('❌ Error generating QRIS QR Code:', err);
-    }
-  };
-  
-  // Generate QR code on load
-  generateQRIS();
 
   $('#btn-cancel').addEventListener('click', () => {
     navigate('/cash-payment');
