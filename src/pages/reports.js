@@ -79,6 +79,8 @@ export default function render(container) {
     return `${summary}${items.length > 3 ? '...' : ''} - ${count} Items`;
   };
 
+  let chartDataForPopup = {}; // Store chart data for popup when clicked
+
   const renderContent = () => {
     const userRole = store.currentUser?.role?.toLowerCase() || '';
     let tabContent = '';
@@ -187,8 +189,24 @@ export default function render(container) {
       chartBars = hourlySales.map((sale, i) => {
         const hPct = maxSale > 1 ? (sale / maxSale) * 100 : 0;
         const color = i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-yellow)' : 'var(--color-pink)';
-        return { h: `${hPct}%`, color };
+        return { h: `${hPct}%`, color, value: sale };
       });
+      
+      // Store data for popup
+      chartDataForPopup = {
+        type: 'today',
+        labels: chartXLabels,
+        values: hourlySales,
+        dataPoints: chartXLabels.map((label, i) => ({
+          label,
+          value: hourlySales[i],
+          count: filteredOrders.filter(o => {
+            const hour = new Date(o.createdAt).getHours();
+            const timeRange = i === 0 ? hour < 11 : i === 1 ? hour < 13 : i === 2 ? hour < 15 : i === 3 ? hour < 17 : i === 4 ? hour < 19 : i === 5 ? hour < 21 : true;
+            return timeRange && o.status === 'completed';
+          }).length
+        }))
+      };
     } else if (timeFilter === 'week') {
       chartXLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
       const dailySales = [0, 0, 0, 0, 0, 0, 0];
@@ -206,8 +224,24 @@ export default function render(container) {
       chartBars = dailySales.map((sale, i) => {
         const hPct = maxSale > 1 ? (sale / maxSale) * 100 : 0;
         const color = i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-yellow)' : 'var(--color-pink)';
-        return { h: `${hPct}%`, color };
+        return { h: `${hPct}%`, color, value: sale };
       });
+      
+      // Store data for popup
+      chartDataForPopup = {
+        type: 'week',
+        labels: chartXLabels,
+        values: dailySales,
+        dataPoints: chartXLabels.map((label, i) => ({
+          label,
+          value: dailySales[i],
+          count: filteredOrders.filter(o => {
+            let day = new Date(o.createdAt).getDay();
+            day = day === 0 ? 6 : day - 1;
+            return day === i && o.status === 'completed';
+          }).length
+        }))
+      };
     } else if (timeFilter === 'month') {
       chartXLabels = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
       const weeklySales = [0, 0, 0, 0];
@@ -226,8 +260,24 @@ export default function render(container) {
       chartBars = weeklySales.map((sale, i) => {
         const hPct = maxSale > 1 ? (sale / maxSale) * 100 : 0;
         const color = i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-yellow)' : 'var(--color-pink)';
-        return { h: `${hPct}%`, color };
+        return { h: `${hPct}%`, color, value: sale };
       });
+      
+      // Store data for popup
+      chartDataForPopup = {
+        type: 'month',
+        labels: chartXLabels,
+        values: weeklySales,
+        dataPoints: chartXLabels.map((label, i) => ({
+          label,
+          value: weeklySales[i],
+          count: filteredOrders.filter(o => {
+            const date = new Date(o.createdAt).getDate();
+            const inWeek = i === 0 ? date <= 7 : i === 1 ? date <= 14 : i === 2 ? date <= 21 : true;
+            return inWeek && o.status === 'completed';
+          }).length
+        }))
+      };
     } else {
       chartXLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
       const monthlySales = [0, 0, 0, 0, 0, 0];
@@ -244,8 +294,24 @@ export default function render(container) {
       chartBars = monthlySales.map((sale, i) => {
         const hPct = maxSale > 1 ? (sale / maxSale) * 100 : 0;
         const color = i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'var(--color-yellow)' : 'var(--color-pink)';
-        return { h: `${hPct}%`, color };
+        return { h: `${hPct}%`, color, value: sale };
       });
+      
+      // Store data for popup
+      chartDataForPopup = {
+        type: 'year',
+        labels: chartXLabels,
+        values: monthlySales,
+        dataPoints: chartXLabels.map((label, i) => ({
+          label,
+          value: monthlySales[i],
+          count: filteredOrders.filter(o => {
+            const month = new Date(o.createdAt).getMonth();
+            const bucket = Math.floor(month / 2);
+            return bucket === i && o.status === 'completed';
+          }).length
+        }))
+      };
     }
 
     // Calculate Payment Method Percentages & Nominal dynamically
@@ -388,7 +454,7 @@ export default function render(container) {
               <div style="position: absolute; left: 0; right: 0; bottom: 83px; border-top: 1px dashed var(--color-surface-dim); z-index: 0;"></div>
               <div style="position: absolute; left: 0; right: 0; bottom: 166px; border-top: 1px dashed var(--color-surface-dim); z-index: 0;"></div>
               <div style="position: absolute; left: 0; right: 0; bottom: 250px; border-top: 1px dashed var(--color-surface-dim); z-index: 0;"></div>
-              ${chartBars.map(bar => `<div style="flex: 1; height: ${bar.h}; background: ${bar.color}; border: 2px solid var(--color-border); border-bottom: 0; border-radius: 4px 4px 0 0; z-index: 1;"></div>`).join('')}
+              ${chartBars.map((bar, i) => `<div class="chart-bar" data-index="${i}" style="flex: 1; height: ${bar.h}; background: ${bar.color}; border: 2px solid var(--color-border); border-bottom: 0; border-radius: 4px 4px 0 0; z-index: 1; cursor: pointer; transition: opacity 0.2s, filter 0.2s;" onmouseover="this.style.opacity='0.8'; this.style.filter='brightness(1.1)'" onmouseout="this.style.opacity='1'; this.style.filter='brightness(1)'"></div>`).join('')}
             </div>
             <div style="display: flex; gap: 16px; padding-left: 40px; margin-top: 8px;">
               ${chartXLabels.map(label => `<div style="flex: 1; text-align: center; font-size: 12px; font-weight: bold;">${label}</div>`).join('')}
@@ -464,8 +530,41 @@ export default function render(container) {
         return true;
       });
 
+      // Calculate totals for orders tab
+      const ordersTabTotalIncome = filteredOrders
+        .filter(o => o.status === 'completed')
+        .reduce((sum, o) => sum + o.total, 0);
+      const ordersTabTotalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+      const ordersTabNetIncome = ordersTabTotalIncome - ordersTabTotalExpenses;
+
       tabContent = `
-        <div class="flex-col gap-base" style="margin-top: var(--space-xl);">
+        <!-- Totals Summary Card -->
+        <div style="margin-bottom: var(--space-lg); padding: var(--space-lg); border: 2px solid var(--color-text); border-radius: var(--radius-lg); background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); box-shadow: 4px 4px 0 var(--color-text);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg);">
+            <!-- Total Pemasukan -->
+            <div style="padding: var(--space-base); border: 2px solid var(--color-text); border-radius: var(--radius-md); background: white; box-shadow: 2px 2px 0 var(--color-text);">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 6px;">TOTAL PEMASUKAN</div>
+              <div style="font-size: 24px; font-weight: 900; color: #16a34a; line-height: 1; margin-bottom: 4px;">+${formatRupiah(ordersTabTotalIncome)}</div>
+              <div style="font-size: 11px; color: var(--color-text-muted); font-weight: 500;">Dari ${filteredOrders.filter(o => o.status === 'completed').length} pesanan selesai</div>
+            </div>
+
+            <!-- Total Pengeluaran -->
+            <div style="padding: var(--space-base); border: 2px solid var(--color-text); border-radius: var(--radius-md); background: white; box-shadow: 2px 2px 0 var(--color-text);">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 6px;">TOTAL PENGELUARAN</div>
+              <div style="font-size: 24px; font-weight: 900; color: #dc2626; line-height: 1; margin-bottom: 4px;">-${formatRupiah(ordersTabTotalExpenses)}</div>
+              <div style="font-size: 11px; color: var(--color-text-muted); font-weight: 500;">Periode yang sama</div>
+            </div>
+
+            <!-- Net Income -->
+            <div style="padding: var(--space-base); border: 2px solid var(--color-text); border-radius: var(--radius-md); background: white; box-shadow: 2px 2px 0 var(--color-text);">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 6px;">LABA BERSIH</div>
+              <div style="font-size: 24px; font-weight: 900; color: ${ordersTabNetIncome >= 0 ? '#0369a1' : '#dc2626'}; line-height: 1; margin-bottom: 4px;">${ordersTabNetIncome >= 0 ? '+' : ''}${formatRupiah(ordersTabNetIncome)}</div>
+              <div style="font-size: 11px; color: var(--color-text-muted); font-weight: 500;">Pemasukan - Pengeluaran</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-col gap-base">
           ${filteredOrders.map(order => `
             <div class="card-flat" data-id="${order.id}" style="padding: var(--space-base); display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg);">
               <div style="width: 120px; flex-shrink: 0;">
@@ -669,6 +768,39 @@ export default function render(container) {
           </div>
         </main>
 
+        <!-- Modal Chart Popup -->
+        <div id="modal-chart-popup" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
+          <div class="card animate-scale-in" style="width: 100%; max-width: 600px; padding: var(--space-xl); background: var(--color-white); border: 2px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); position: relative; border-radius: var(--radius-lg);">
+            <button class="btn-icon-sm btn-ghost" id="btn-close-chart-popup" style="position: absolute; top: 16px; right: 16px; cursor: pointer;">✕</button>
+            
+            <div style="margin-bottom: var(--space-lg);">
+              <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 8px;" id="chart-popup-title">Detail Penjualan</h2>
+              <p class="text-muted" id="chart-popup-period" style="font-size: 14px;">Period</p>
+            </div>
+
+            <div style="background: var(--color-primary-surface); border: 2px solid var(--color-primary); border-radius: var(--radius-md); padding: var(--space-lg); margin-bottom: var(--space-lg);">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg);">
+                <div>
+                  <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 800; letter-spacing: 1px; margin-bottom: 4px;">TOTAL PENJUALAN</div>
+                  <div style="font-size: 28px; font-weight: 900; color: var(--color-primary); line-height: 1;" id="chart-popup-value">Rp 0</div>
+                </div>
+                <div>
+                  <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 800; letter-spacing: 1px; margin-bottom: 4px;">JUMLAH PESANAN</div>
+                  <div style="font-size: 28px; font-weight: 900; color: var(--color-yellow); line-height: 1;" id="chart-popup-count">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="chart-popup-details" style="background: var(--color-surface-dim); border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-lg);">
+              <!-- Details will be populated here -->
+            </div>
+
+            <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-xl);">
+              <button type="button" class="btn btn-yellow flex-1" id="btn-close-chart-popup-action" style="border: 2px solid var(--color-text); box-shadow: 4px 4px 0 var(--color-text); font-weight: bold;">Tutup</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Modal Edit Order -->
         <div id="modal-edit-order" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
           <div class="card animate-scale-in" style="width: 100%; max-width: 500px; padding: var(--space-2xl); background: var(--color-white); border: 2px solid var(--color-text); box-shadow: 6px 6px 0 var(--color-text); position: relative;">
@@ -848,6 +980,73 @@ export default function render(container) {
 
   const attachListeners = () => {
     setupTopbarListeners(container);
+
+    // ── Chart Bar Click Listeners ──
+    const modalChartPopup = container.querySelector('#modal-chart-popup');
+    const btnCloseChartPopup = container.querySelector('#btn-close-chart-popup');
+    const btnCloseChartPopupAction = container.querySelector('#btn-close-chart-popup-action');
+    
+    if (modalChartPopup) {
+      const closeChartPopup = () => {
+        modalChartPopup.style.display = 'none';
+      };
+
+      if (btnCloseChartPopup) btnCloseChartPopup.addEventListener('click', closeChartPopup);
+      if (btnCloseChartPopupAction) btnCloseChartPopupAction.addEventListener('click', closeChartPopup);
+
+      // Click on backdrop to close
+      modalChartPopup.addEventListener('click', (e) => {
+        if (e.target === modalChartPopup) closeChartPopup();
+      });
+    }
+
+    // Chart bars click handler
+    container.querySelectorAll('.chart-bar').forEach(bar => {
+      bar.addEventListener('click', () => {
+        const index = parseInt(bar.dataset.index);
+        if (chartDataForPopup && chartDataForPopup.dataPoints && chartDataForPopup.dataPoints[index]) {
+          const dataPoint = chartDataForPopup.dataPoints[index];
+          const titleEl = container.querySelector('#chart-popup-title');
+          const periodEl = container.querySelector('#chart-popup-period');
+          const valueEl = container.querySelector('#chart-popup-value');
+          const countEl = container.querySelector('#chart-popup-count');
+          const detailsEl = container.querySelector('#chart-popup-details');
+
+          titleEl.textContent = `Detail Penjualan - ${dataPoint.label}`;
+          periodEl.textContent = `Periode: ${dataPoint.label}`;
+          valueEl.textContent = formatRupiah(dataPoint.value);
+          countEl.textContent = dataPoint.count + ' pesanan';
+
+          // Create detailed breakdown
+          let detailsHtml = `
+            <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border);">
+                <span style="font-weight: 600;">Periode</span>
+                <span style="font-weight: bold; color: var(--color-primary);">${dataPoint.label}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border);">
+                <span style="font-weight: 600;">Total Penjualan</span>
+                <span style="font-weight: bold; color: var(--color-primary); font-size: 18px;">${formatRupiah(dataPoint.value)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0;">
+                <span style="font-weight: 600;">Jumlah Pesanan</span>
+                <span style="font-weight: bold; color: var(--color-yellow); font-size: 18px;">${dataPoint.count} pesanan</span>
+              </div>
+              ${dataPoint.count > 0 ? `
+                <div style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 2px dashed var(--color-border);">
+                  <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; margin-bottom: 4px;">RATA-RATA PER PESANAN</div>
+                  <div style="font-size: 20px; font-weight: 900; color: var(--color-primary);">${formatRupiah(Math.floor(dataPoint.value / dataPoint.count))}</div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+
+          detailsEl.innerHTML = detailsHtml;
+          modalChartPopup.style.display = 'flex';
+        }
+      });
+    });
+
     const btnOpenStore = container.querySelector('#btn-open-store');
     const modalStore = container.querySelector('#modal-open-store');
     const formStore = container.querySelector('#form-open-store');
@@ -987,6 +1186,11 @@ export default function render(container) {
               }
               return true;
             });
+
+            // Calculate totals for CSV export
+            const csvOrdersTotalIncome = filteredOrders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0);
+            const csvOrdersTotalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const csvOrdersNetIncome = csvOrdersTotalIncome - csvOrdersTotalExpenses;
             
             csv += `Laporan Riwayat Pesanan Suka Bakar Dimsum\n`;
             csv += `Tanggal Ekspor;${todayStr}\n\n`;
@@ -997,6 +1201,11 @@ export default function render(container) {
               const serviceStr = o.serviceType === 'dine-in' ? 'Dine-in' : 'Takeaway';
               csv += `#${o.orderNumber};${o.customerName};${o.table || 'Walk-in'};${serviceStr};${o.total};${statusStr};${new Date(o.createdAt).toLocaleString('id-ID')}\n`;
             });
+
+            csv += `\nTOTAL RINGKASAN;NILAI\n`;
+            csv += `Total Pemasukan;${csvOrdersTotalIncome}\n`;
+            csv += `Total Pengeluaran;${csvOrdersTotalExpenses}\n`;
+            csv += `Laba Bersih;${csvOrdersNetIncome}\n`;
           } else if (activeTab === 'expenses') {
             // Riwayat Pengeluaran
             const userRole = store.currentUser?.role?.toLowerCase() || '';
@@ -1092,6 +1301,11 @@ export default function render(container) {
               }
               return true;
             });
+
+            // Calculate totals for PDF export
+            const pdfOrdersTotalIncome = filteredOrders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0);
+            const pdfOrdersTotalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const pdfOrdersNetIncome = pdfOrdersTotalIncome - pdfOrdersTotalExpenses;
             
             htmlContent = `
               <h2>RIWAYAT PESANAN</h2>
@@ -1116,6 +1330,13 @@ export default function render(container) {
                     <td>${new Date(o.createdAt).toLocaleString('id-ID')}</td>
                   </tr>
                 `).join('')}
+              </table>
+              <h2>TOTAL RINGKASAN PEMASUKAN & PENGELUARAN</h2>
+              <table>
+                <tr><th>KETERANGAN</th><th>NILAI</th></tr>
+                <tr><td><b>Total Pemasukan</b></td><td><b>Rp ${pdfOrdersTotalIncome.toLocaleString('id-ID')}</b></td></tr>
+                <tr><td><b>Total Pengeluaran</b></td><td><b>Rp ${pdfOrdersTotalExpenses.toLocaleString('id-ID')}</b></td></tr>
+                <tr style="background:#f0fdf4;"><td><b>Laba Bersih</b></td><td><b>Rp ${pdfOrdersNetIncome.toLocaleString('id-ID')}</b></td></tr>
               </table>
             `;
           } else if (activeTab === 'expenses') {
