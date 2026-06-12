@@ -1,6 +1,7 @@
 import { store } from '../store.js';
 import { navigate } from '../router.js';
 import { formatRupiah, icons, $, $$ } from '../utils.js';
+import QRCode from 'qrcode';
 
 function renderSidebar(activePage) {
   const _role = (store.currentUser?.role || '').toLowerCase();
@@ -104,12 +105,12 @@ export default function render(container) {
             <!-- Merchant Info -->
             <div style="padding: 12px 16px 6px; text-align:center; border-bottom: 1px solid #f0f0f0;">
               <div style="font-size:15px; font-weight:900; color:#111;">Suka Bakar Dimsum</div>
-              <div style="font-size:11px; color:#666; margin-top:2px;">NMID : ID1026522447931 &nbsp;·&nbsp; A01</div>
+              <div style="font-size:11px; color:#666; margin-top:2px;">NMID : ID1026531769952 &nbsp;·&nbsp; A01</div>
             </div>
 
             <!-- QR Code Image -->
             <div style="padding: 12px 24px; display:flex; flex-direction:column; align-items:center;">
-              <img src="/qris-kedai-pojok.webp" alt="QRIS Suka Bakar Dimsum" style="width: 100%; max-width: 260px; height: auto; display:block;">
+              <canvas id="qris-canvas" style="width: 100%; max-width: 260px; height: auto; display:block;"></canvas>
             </div>
 
             <!-- Amount Banner -->
@@ -186,6 +187,35 @@ export default function render(container) {
       </main>
     </div>
   `;
+
+  // Generate Dynamic QRIS QR Code
+  const generateQRIS = async () => {
+    try {
+      // Format: QRIS standar EMV dengan NMID dan amount
+      const nmid = 'ID1026531769952';
+      const merchantName = 'Suka Bakar Dimsum';
+      const qrisData = `00020126360014com.aspi2qris20276${nmid}5204000053033604061088070718507${String(total).padStart(13, '0')}5802ID5913${merchantName.padEnd(25, ' ')}6009Surabaya62290515sukabakar63047AA1`;
+      
+      const canvas = $('#qris-canvas');
+      if (canvas) {
+        await QRCode.toCanvas(canvas, qrisData, {
+          errorCorrectionLevel: 'H',
+          type: 'image/png',
+          width: 260,
+          margin: 0,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+      }
+    } catch (err) {
+      console.error('❌ Error generating QRIS QR Code:', err);
+    }
+  };
+  
+  // Generate QR code on load
+  generateQRIS();
 
   $('#btn-cancel').addEventListener('click', () => {
     navigate('/cash-payment');
