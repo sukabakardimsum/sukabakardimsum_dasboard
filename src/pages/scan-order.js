@@ -358,7 +358,7 @@ export default function render(container) {
 
           <!-- QR Image -->
           <div style="padding:8px 32px 4px; display:flex; justify-content:center;">
-            <img src="/qris-kedai-pojok.png" alt="QRIS Suka Bakar Dimsum" style="width:100%; max-width:220px; height:auto; display:block;">
+            <img src="/qris-kedai-pojok.webp" alt="QRIS Suka Bakar Dimsum" style="width:100%; max-width:220px; height:auto; display:block;">
           </div>
 
           <!-- Total Amount Banner -->
@@ -372,7 +372,7 @@ export default function render(container) {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Salin
               </button>
-              <a href="/qris-kedai-pojok.png" download="QRIS-Kedai-Pojok-13.png" style="height:28px; padding:0 8px; background:#111; color:white; border:1.5px solid #111; box-shadow:1.5px 1.5px 0 #444; border-radius:4px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:4px; text-decoration:none; white-space:nowrap;">
+              <a href="/qris-kedai-pojok.webp" download="QRIS-Kedai-Pojok-13.webp" style="height:28px; padding:0 8px; background:#111; color:white; border:1.5px solid #111; box-shadow:1.5px 1.5px 0 #444; border-radius:4px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:4px; text-decoration:none; white-space:nowrap;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Download
               </a>
